@@ -16,11 +16,24 @@ namespace Bai1
         {
             InitializeComponent();
         }
+
+        #region Biến toàn cục
+
         public string strConnection = @"Data Source=.;Initial Catalog=CNPM;Integrated Security=True;Pooling=False";
 
         public SqlConnection connection;
+
+        public HocSinh hocSinh = new HocSinh();
+
+        string query;
+
+        SqlCommand command;
+        #endregion
+
+
         private void Form1_Load(object sender, EventArgs e)
         {
+
             #region thêm lớp vào cbb
             cbbLop.Items.Add("Lớp 10A1");
             cbbLop.Items.Add("Lớp 10A2");
@@ -71,14 +84,43 @@ namespace Bai1
 
 
 
-        private void btnThoat_Click(object sender, EventArgs e)
-        {
-            this.Close();
-        }
-
         private void btnXoa_Click(object sender, EventArgs e)
         {
+            hocSinh.MaHS = txbMaHS.Text.Trim();
 
+            if (connection.State == ConnectionState.Closed)
+            {
+                connection.Open();
+            }
+
+            if (MessageBox.Show("Xóa học sinh có mã " + hocSinh.MaHS, "Thông báo", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == System.Windows.Forms.DialogResult.Yes)
+            {
+                try
+                {
+                    query = String.Format("DELETE dbo.HocSinh WHERE MaHS = '{0}'", hocSinh.MaHS);
+                    command = new SqlCommand(query, connection);
+
+                    int row = command.ExecuteNonQuery();
+                    if (row > 0)
+                    {
+                        MessageBox.Show("Xóa thành công", "Thông báo");
+                    }
+                    else
+                    {
+                        MessageBox.Show("Xóa thất bại", "Thông báo");
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                    MessageBox.Show(ex.Message);
+                }
+                finally
+                {
+                    connection.Close();
+                }
+
+            }
         }
 
         private void btnLuu_Click(object sender, EventArgs e)
@@ -158,6 +200,10 @@ namespace Bai1
 
         }
 
+        /// <summary>
+        /// Lấy danh sách học sinh có trong database
+        /// </summary>
+        /// <returns></returns>
         public List<HocSinh> LoadListHS()
         {
             List<HocSinh> listHS = new List<HocSinh>();
@@ -199,13 +245,13 @@ namespace Bai1
 
         }
 
-        
+
 
         private void lstDanhSach_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (lstDanhSach.SelectedIndices.Count > 0)
             {
-                HocSinh hocSinh = new HocSinh();
+
                 hocSinh.MaHS = lstDanhSach.SelectedItems[0].SubItems[0].Text.Trim();
                 try
                 {
@@ -251,6 +297,56 @@ namespace Bai1
                 }
             }
 
+        }
+
+        private void btnCapNhat_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (connection.State == ConnectionState.Closed)
+                {
+                    connection.Open();
+                }
+
+                hocSinh.MaHS = txbMaHS.Text.Trim();
+                query = String.Format("UPDATE dbo.HocSinh SET HoTen=N'{0}',GioiTinh={1},NgaySinh='{2}',DiaChi=N'{3}',DTB='{4}',Lop=N'{5}' WHERE MaHS='{6}'",
+                    txbHoTen.Text, rdNam.Checked ? 1 : 0, dtpNgaySinh.Value, txbDiaChi.Text, txbDiemTB.Text, cbbLop.SelectedItem.ToString(), txbMaHS.Text);
+
+                SqlCommand command = new SqlCommand(query, connection);
+
+                int row = command.ExecuteNonQuery();
+
+                if (row > 0)
+                {
+                    MessageBox.Show("Cập nhật thành công", "Thông báo");
+                }
+                else
+                {
+                    MessageBox.Show("Cập nhật thất bại", "Thông báo");
+                }
+            }
+            catch (Exception ex)
+            {
+
+                MessageBox.Show("Lỗi " + ex.Message);
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+
+        private void btnLamMoi_Click(object sender, EventArgs e)
+        {
+            lstDanhSach.Items.Clear();
+
+            List<HocSinh> lst = LoadListHS();
+
+            foreach (HocSinh hs in lst)
+            {
+                lstDanhSach.Items.Add(new ListViewItem(new string[] {hs.MaHS,hs.HoTen,hs.GioiTinh,
+                                      hs.NgaySinh.ToString(),hs.DiaChi,hs.DiemTB.ToString(),hs.Lop }));
+            }
         }
     }
 }
